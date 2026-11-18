@@ -8,7 +8,7 @@ const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], weight: ["600", "700", "
 
 export const metadata: Metadata = {
   title: { default: "CarteÉcole : cartes d'identité scolaires", template: "%s · CarteÉcole" },
-  description: "Créez les cartes d'identité de vos élèves à partir d'un fichier Excel. Abonnement par établissement, essai gratuit de 14 jours.",
+  description: "Créez les cartes d’identité de vos élèves à partir d’un fichier Excel. Tarif proposé : 100 FCFA par carte, sans abonnement mensuel.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

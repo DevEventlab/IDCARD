@@ -35,8 +35,8 @@ const SHEET_ROWS = [
 ];
 
 const FAQ = [
-  { q: "Comment fonctionne l'abonnement ?", a: "L'abonnement est souscrit par établissement, au mois ou à l'année. L'essai gratuit de 14 jours donne accès à toutes les fonctions : vous choisissez la formule ensuite." },
-  { q: "Puis-je changer de formule ou résilier ?", a: "Oui, à tout moment depuis votre espace. Après une résiliation, vos PDF déjà générés restent téléchargeables pendant une période de grâce." },
+  { q: "Comment fonctionne la facturation ?", a: "Le tarif proposé est de 100 FCFA par carte produite, sans abonnement mensuel. L’essai prévu dure 10 jours et inclut 2 cartes gratuites ; la facturation sera activée après le choix d’un prestataire de paiement." },
+  { q: "Quand le paiement sera-t-il disponible ?", a: "Les factures et le blocage des téléchargements après paiement ne sont pas encore activés dans l’application." },
   { q: "Pourquoi les photos ne sont-elles pas dans le fichier Excel ?", a: "Des photos collées dans Excel alourdissent le fichier, se déplacent quand on trie les lignes et perdent en qualité. Un ZIP de photos nommées avec le matricule est fiable, et chaque photo reste réutilisable d'une année sur l'autre." },
   { q: "Combien d'élèves par fichier ?", a: "Jusqu'à 1 000 élèves par fichier. Au-delà, utilisez le format « un fichier par classe »." },
   { q: "Que se passe-t-il si un élève n'a pas de photo ?", a: "La carte est générée avec un avatar par défaut, et l'élève apparaît dans le rapport de validation pour que vous puissiez ajouter la photo plus tard." },
@@ -183,7 +183,7 @@ export default function Home() {
         {/* Tarifs */}
         <section id="tarifs" className="scroll-mt-20 bg-white">
           <div className="wrap py-24 lg:py-32">
-            <SectionTitle title={<>Un abonnement.<br />Pas de mauvaise surprise.</>} text="La formule suit le nombre d'élèves de votre établissement. Générez autant de PDF que nécessaire pendant l'année." />
+            <SectionTitle title={<>Un tarif par carte.<br />Pas d’abonnement mensuel.</>} text="Le tarif proposé est de 100 FCFA par carte produite. L’essai prévu dure 10 jours et comprend 2 cartes gratuites." />
             <div className="mt-12"><Pricing /></div>
           </div>
         </section>
