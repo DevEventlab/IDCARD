@@ -1,0 +1,1624 @@
+<!DOCTYPE html>
+<html lang="fr" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScolarCard — Génération Automatisée de Cartes Scolaires depuis Excel</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Plus Jakarta Sans & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Plus Jakarta Sans', 'sans-serif'],
+                    },
+                    colors: {
+                        navy: {
+                            800: '#162544',
+                            900: '#0F172A',
+                            950: '#090E1A',
+                        },
+                        emerald: {
+                            400: '#34D399',
+                            500: '#10B981',
+                            600: '#059669',
+                        },
+                        offwhite: '#F8FAFC',
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #F8FAFC;
+            color: #0F172A;
+        }
+        .glass-nav {
+            background: rgba(248, 250, 252, 0.88);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+        .pattern-grid {
+            background-image: radial-gradient(#CBD5E1 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+        .pattern-grid-dark {
+            background-image: radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+        .clip-hex {
+            clip-path: polygon(50% 0%, 95% 25%, 95% 75%, 50% 100%, 5% 75%, 5% 25%);
+        }
+        .font-signature {
+            font-family: 'Brush Script MT', 'Segoe Script', cursive;
+        }
+    </style>
+</head>
+<body class="antialiased selection:bg-emerald-500 selection:text-white overflow-x-hidden">
+
+    <!-- ==================== NAVIGATION ==================== -->
+    <header class="fixed top-0 inset-x-0 z-50 glass-nav border-b border-slate-200/80 transition-all">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <!-- Logo -->
+                <a href="#" class="flex items-center gap-3 group">
+                    <div class="w-10 h-10 rounded-xl bg-navy-900 flex items-center justify-center text-emerald-400 shadow-lg shadow-navy-900/20 group-hover:scale-105 transition-transform">
+                        <i data-lucide="id-card" class="w-6 h-6"></i>
+                    </div>
+                    <span class="font-display font-extrabold text-xl tracking-tight text-navy-900">
+                        Scolar<span class="text-emerald-600">Card</span>
+                    </span>
+                </a>
+
+                <!-- Desktop Navigation -->
+                <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
+                    <a href="#comment-ca-marche" class="hover:text-navy-900 transition-colors">Comment ça marche</a>
+                    <a href="#simulateur" class="hover:text-navy-900 transition-colors">Modèles & Studio</a>
+                    <a href="#fonctionnalites" class="hover:text-navy-900 transition-colors">Fonctionnalités</a>
+                    <a href="#tarifs" class="hover:text-navy-900 transition-colors">Tarifs</a>
+                    <a href="#faq" class="hover:text-navy-900 transition-colors">FAQ</a>
+                </nav>
+
+                <!-- Action Buttons -->
+                <div class="hidden md:flex items-center gap-3">
+                    <button type="button" onclick="openModal('login')" class="px-4 py-2.5 text-sm font-semibold text-navy-900 hover:bg-slate-200/60 rounded-xl transition-colors">
+                        Connexion
+                    </button>
+                    <button type="button" onclick="openModal('signup')" class="px-5 py-2.5 text-sm font-semibold text-white bg-navy-900 hover:bg-navy-800 rounded-xl shadow-md shadow-navy-900/15 flex items-center gap-2 transition-all hover:-translate-y-0.5">
+                        <span>Essai gratuit</span>
+                        <i data-lucide="arrow-right" class="w-4 h-4 text-emerald-400"></i>
+                    </button>
+                </div>
+
+                <!-- Mobile Menu Button -->
+                <button type="button" id="mobile-menu-btn" class="md:hidden p-2.5 rounded-xl text-navy-900 hover:bg-slate-200/60 transition-colors" aria-label="Menu">
+                    <i data-lucide="menu" class="w-6 h-6"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Dropdown -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white border-b border-slate-200 px-4 pt-2 pb-6 space-y-2 shadow-xl">
+            <a href="#comment-ca-marche" class="mobile-nav-link block px-3 py-2.5 rounded-xl text-base font-medium text-slate-700 hover:bg-slate-50">Comment ça marche</a>
+            <a href="#simulateur" class="mobile-nav-link block px-3 py-2.5 rounded-xl text-base font-medium text-slate-700 hover:bg-slate-50">Modèles & Studio</a>
+            <a href="#fonctionnalites" class="mobile-nav-link block px-3 py-2.5 rounded-xl text-base font-medium text-slate-700 hover:bg-slate-50">Fonctionnalités</a>
+            <a href="#tarifs" class="mobile-nav-link block px-3 py-2.5 rounded-xl text-base font-medium text-slate-700 hover:bg-slate-50">Tarifs</a>
+            <a href="#faq" class="mobile-nav-link block px-3 py-2.5 rounded-xl text-base font-medium text-slate-700 hover:bg-slate-50">FAQ</a>
+            <div class="pt-3 border-t border-slate-100 flex flex-col gap-2">
+                <button type="button" onclick="openModal('login')" class="w-full py-3 text-center font-semibold text-navy-900 bg-slate-100 rounded-xl">Connexion</button>
+                <button type="button" onclick="openModal('signup')" class="w-full py-3 text-center font-semibold text-white bg-navy-900 rounded-xl">Créer un compte école</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ==================== HERO SECTION ==================== -->
+    <section class="relative pt-32 pb-20 lg:pt-40 lg:pb-28 pattern-grid overflow-hidden">
+        <!-- Decorative gradient blobs -->
+        <div class="absolute top-20 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-emerald-400/10 blur-3xl rounded-full pointer-events-none"></div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+            <div class="grid lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+                
+                <!-- Left Column: Copywriting -->
+                <div class="lg:col-span-6 text-center lg:text-left">
+                    <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold mb-6 shadow-sm">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                        <span>Nouvelle version 2026 • Génération par lot ultra-rapide</span>
+                    </div>
+
+                    <h1 class="font-display font-extrabold text-4xl sm:text-5xl lg:text-[3.4rem] leading-[1.12] tracking-tight text-navy-900 mb-6">
+                        De votre fichier <span class="text-emerald-600 underline decoration-emerald-300 decoration-4 underline-offset-4">Excel</span> aux cartes scolaires en <span class="text-navy-900">1 clic.</span>
+                    </h1>
+
+                    <p class="text-lg text-slate-600 leading-relaxed mb-8 max-w-2xl mx-auto lg:mx-0">
+                        Inscrivez votre établissement, importez vos listes d'élèves par classe (.xlsx ou .csv) et laissez <strong>ScolarCard</strong> extraire chaque ligne pour générer instantanément des cartes d'identité officielles, sécurisées et prêtes à imprimer.
+                    </p>
+
+                    <div class="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 mb-10">
+                        <button type="button" onclick="openModal('signup')" class="w-full sm:w-auto px-7 py-4 rounded-2xl bg-navy-900 hover:bg-navy-800 text-white font-semibold text-base shadow-xl shadow-navy-900/20 flex items-center justify-center gap-2.5 transition-all hover:-translate-y-0.5">
+                            <i data-lucide="sparkles" class="w-5 h-5 text-emerald-400"></i>
+                            <span>Générer mes premières cartes</span>
+                        </button>
+                        <a href="#simulateur" class="w-full sm:w-auto px-7 py-4 rounded-2xl bg-white hover:bg-slate-50 text-navy-900 border border-slate-200 font-semibold text-base shadow-sm flex items-center justify-center gap-2 transition-all">
+                            <i data-lucide="play-circle" class="w-5 h-5 text-emerald-600"></i>
+                            <span>Tester le studio en direct</span>
+                        </a>
+                    </div>
+
+                    <!-- Trust Metrics -->
+                    <div class="grid grid-cols-3 gap-4 pt-6 border-t border-slate-200/80 max-w-lg mx-auto lg:mx-0">
+                        <div>
+                            <p class="font-display font-extrabold text-2xl text-navy-900">1 000+</p>
+                            <p class="text-xs text-slate-500 font-medium">Cartes générées / min</p>
+                        </div>
+                        <div>
+                            <p class="font-display font-extrabold text-2xl text-emerald-600">100%</p>
+                            <p class="text-xs text-slate-500 font-medium">Compatible Excel & CSV</p>
+                        </div>
+                        <div>
+                            <p class="font-display font-extrabold text-2xl text-navy-900">300 DPI</p>
+                            <p class="text-xs text-slate-500 font-medium">Export PDF Haute Déf.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Interactive Excel -> Student Card Transformation Demo -->
+                <div class="lg:col-span-6">
+                    <div class="bg-white rounded-3xl p-5 sm:p-6 shadow-2xl shadow-navy-900/10 border border-slate-200/90 relative">
+                        <!-- Top Window Controls -->
+                        <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+                            <div class="flex items-center gap-2">
+                                <span class="w-3 h-3 rounded-full bg-rose-400"></span>
+                                <span class="w-3 h-3 rounded-full bg-amber-400"></span>
+                                <span class="w-3 h-3 rounded-full bg-emerald-400"></span>
+                                <span class="ml-2 text-xs font-semibold text-slate-500 flex items-center gap-1.5">
+                                    <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-600"></i>
+                                    liste_eleves_3eme_A.xlsx
+                                </span>
+                            </div>
+                            <span class="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                Cliquez sur une ligne
+                            </span>
+                        </div>
+
+                        <!-- Interactive Excel Rows -->
+                        <div class="overflow-x-auto rounded-xl border border-slate-200 mb-5">
+                            <table class="w-full text-left border-collapse text-xs">
+                                <thead>
+                                    <tr class="bg-slate-100 text-slate-600 font-semibold border-b border-slate-200">
+                                        <th class="py-2.5 px-3">Ligne</th>
+                                        <th class="py-2.5 px-3">Matricule</th>
+                                        <th class="py-2.5 px-3">Nom & Prénom</th>
+                                        <th class="py-2.5 px-3">Classe</th>
+                                        <th class="py-2.5 px-3 hidden sm:table-cell">Naissance</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="hero-excel-rows" class="divide-y divide-slate-100">
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Animated Connector Arrow & Model Switcher -->
+                        <div class="flex flex-wrap items-center justify-between gap-2 my-3">
+                            <div class="px-3.5 py-1.5 rounded-full bg-navy-900 text-white text-xs font-semibold flex items-center gap-2 shadow-md">
+                                <i data-lucide="cpu" class="w-3.5 h-3.5 text-emerald-400 animate-spin" style="animation-duration: 6s;"></i>
+                                <span>Ligne #<span id="hero-active-row-num">1</span></span>
+                            </div>
+                            <!-- Quick Template Switcher in Hero -->
+                            <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 text-[11px] font-semibold">
+                                <button type="button" onclick="setHeroTemplate(0)" id="hero-tpl-0" class="hero-tpl-pill px-2.5 py-1 rounded-lg bg-white text-navy-900 shadow-sm transition-all">Officiel</button>
+                                <button type="button" onclick="setHeroTemplate(1)" id="hero-tpl-1" class="hero-tpl-pill px-2.5 py-1 rounded-lg text-slate-600 hover:text-navy-900 transition-all">Numérique</button>
+                                <button type="button" onclick="setHeroTemplate(2)" id="hero-tpl-2" class="hero-tpl-pill px-2.5 py-1 rounded-lg text-slate-600 hover:text-navy-900 transition-all">Moderne</button>
+                                <button type="button" onclick="setHeroTemplate(3)" id="hero-tpl-3" class="hero-tpl-pill px-2.5 py-1 rounded-lg text-slate-600 hover:text-navy-900 transition-all">Badge</button>
+                            </div>
+                        </div>
+
+                        <!-- Generated Student ID Card Preview (Dynamic Light Templates) -->
+                        <div id="hero-card-container" class="transition-all duration-300 flex justify-center py-2">
+                            <!-- Rendered dynamically by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== SOCIAL PROOF / LOGOS ==================== -->
+    <section class="py-10 bg-white border-y border-slate-200/80">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <p class="text-center text-xs font-semibold uppercase tracking-widest text-slate-400 mb-6">
+                Adopté par plus de 320 établissements scolaires, collèges, lycées et instituts supérieurs
+            </p>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 items-center justify-items-center opacity-75">
+                <div class="flex items-center gap-2.5 font-display font-bold text-slate-700 text-base">
+                    <i data-lucide="landmark" class="w-5 h-5 text-emerald-600"></i>
+                    <span>Collège Montaigne</span>
+                </div>
+                <div class="flex items-center gap-2.5 font-display font-bold text-slate-700 text-base">
+                    <i data-lucide="book-open" class="w-5 h-5 text-navy-900"></i>
+                    <span>Groupe Scolaire Élite</span>
+                </div>
+                <div class="flex items-center gap-2.5 font-display font-bold text-slate-700 text-base">
+                    <i data-lucide="award" class="w-5 h-5 text-emerald-600"></i>
+                    <span>Institut Polytechnique</span>
+                </div>
+                <div class="flex items-center gap-2.5 font-display font-bold text-slate-700 text-base">
+                    <i data-lucide="school" class="w-5 h-5 text-navy-900"></i>
+                    <span>Lycée Les Lauriers</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== COMMENT ÇA MARCHE (4 ÉTAPES) ==================== -->
+    <section id="comment-ca-marche" class="py-20 lg:py-28 bg-offwhite">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-16">
+                <span class="text-xs font-bold uppercase tracking-widest text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+                    Processus simplifié
+                </span>
+                <h2 class="font-display font-extrabold text-3xl sm:text-4xl text-navy-900 mt-4 mb-4">
+                    Comment ça marche ?
+                </h2>
+                <p class="text-slate-600 text-lg">
+                    Fini la saisie manuelle interminable sur Photoshop ou Word. Créez les cartes de tout votre établissement en quatre étapes fluides.
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-8 relative">
+                <!-- Step 1 -->
+                <div class="bg-white rounded-3xl p-7 border border-slate-200/90 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all relative">
+                    <div class="w-12 h-12 rounded-2xl bg-navy-900 text-white font-display font-extrabold text-lg flex items-center justify-center mb-6 shadow-md">
+                        01
+                    </div>
+                    <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4">
+                        <i data-lucide="building-2" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="font-display font-bold text-xl text-navy-900 mb-2.5">Inscription de l'école</h3>
+                    <p class="text-sm text-slate-600 leading-relaxed">
+                        Créez l'espace sécurisé de votre établissement, renseignez l'année scolaire en cours et téléversez votre logo officiel ainsi que la signature du proviseur.
+                    </p>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="bg-white rounded-3xl p-7 border border-slate-200/90 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all relative">
+                    <div class="w-12 h-12 rounded-2xl bg-navy-900 text-white font-display font-extrabold text-lg flex items-center justify-center mb-6 shadow-md">
+                        02
+                    </div>
+                    <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4">
+                        <i data-lucide="file-spreadsheet" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="font-display font-bold text-xl text-navy-900 mb-2.5">Import Excel par classe</h3>
+                    <p class="text-sm text-slate-600 leading-relaxed">
+                        Glissez-déposez votre fichier Excel (.xlsx ou .csv) par classe. Notre moteur associe automatiquement les colonnes (Nom, Prénom, Matricule, Date de naissance) et les photos.
+                    </p>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="bg-white rounded-3xl p-7 border border-slate-200/90 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all relative">
+                    <div class="w-12 h-12 rounded-2xl bg-navy-900 text-white font-display font-extrabold text-lg flex items-center justify-center mb-6 shadow-md">
+                        03
+                    </div>
+                    <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4">
+                        <i data-lucide="palette" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="font-display font-bold text-xl text-navy-900 mb-2.5">Personnalisation du modèle</h3>
+                    <p class="text-sm text-slate-600 leading-relaxed">
+                        Choisissez parmi nos gabarits professionnels lumineux, appliquez la charte graphique de votre école et activez le QR Code unique de vérification anti-fraude.
+                    </p>
+                </div>
+
+                <!-- Step 4 -->
+                <div class="bg-white rounded-3xl p-7 border border-slate-200/90 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all relative">
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-600 text-white font-display font-extrabold text-lg flex items-center justify-center mb-6 shadow-md shadow-emerald-600/20">
+                        04
+                    </div>
+                    <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4">
+                        <i data-lucide="printer" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="font-display font-bold text-xl text-navy-900 mb-2.5">Export PDF prêt à imprimer</h3>
+                    <p class="text-sm text-slate-600 leading-relaxed">
+                        Générez en quelques secondes toutes les cartes de la classe. Exportez-les en planches A4 avec repères de coupe ou au format carte PVC (CR80) haute définition.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== SIMULATEUR INTERACTIF DE MODÈLES ==================== -->
+    <section id="simulateur" class="py-20 lg:py-28 bg-navy-900 text-white pattern-grid-dark relative overflow-hidden">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="text-center max-w-3xl mx-auto mb-14">
+                <span class="text-xs font-bold uppercase tracking-widest text-emerald-400 bg-emerald-500/10 px-3.5 py-1.5 rounded-full border border-emerald-400/20">
+                    Studio Interactif en Direct
+                </span>
+                <h2 class="font-display font-extrabold text-3xl sm:text-4xl text-white mt-4 mb-4">
+                    Testez nos 4 modèles de cartes haute précision
+                </h2>
+                <p class="text-slate-300 text-lg">
+                    Des mises en page lumineuses (fond blanc & ivoire), pensées pour une lisibilité parfaite à l'impression et adaptées aux normes scolaires officielles.
+                </p>
+            </div>
+
+            <div class="grid lg:grid-cols-12 gap-8 items-center bg-navy-950/80 border border-white/10 rounded-3xl p-6 sm:p-10 backdrop-blur-md shadow-2xl">
+                
+                <!-- Left Controls -->
+                <div class="lg:col-span-5 space-y-5">
+                    <!-- Template Selector -->
+                    <div>
+                        <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2.5">
+                            1. Choisir une présentation de carte
+                        </label>
+                        <div class="grid grid-cols-1 gap-2">
+                            <button type="button" onclick="setStudioTemplate('officiel')" id="tpl-btn-officiel" class="tpl-btn active text-left px-4 py-3 rounded-xl border border-emerald-400 bg-emerald-500/15 flex items-center justify-between transition-all">
+                                <div>
+                                    <p class="font-bold text-sm text-white">1. Officiel Ministériel (Fond Blanc)</p>
+                                    <p class="text-xs text-slate-300">Armoiries, cadre signature élève & matricule</p>
+                                </div>
+                                <i data-lucide="landmark" class="w-5 h-5 text-emerald-400 shrink-0"></i>
+                            </button>
+
+                            <button type="button" onclick="setStudioTemplate('numerique')" id="tpl-btn-numerique" class="tpl-btn text-left px-4 py-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 flex items-center justify-between transition-all">
+                                <div>
+                                    <p class="font-bold text-sm text-white">2. Numérique QR Code (Fond Ivoire)</p>
+                                    <p class="text-xs text-slate-400">Double filet, QR Code de vérification instantanée</p>
+                                </div>
+                                <i data-lucide="qr-code" class="w-5 h-5 text-slate-400 shrink-0"></i>
+                            </button>
+
+                            <button type="button" onclick="setStudioTemplate('moderne')" id="tpl-btn-moderne" class="tpl-btn text-left px-4 py-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 flex items-center justify-between transition-all">
+                                <div>
+                                    <p class="font-bold text-sm text-white">3. Moderne Géométrique (Blanc & Bleu)</p>
+                                    <p class="text-xs text-slate-400">Bandeaux obliques, signature Directeur & contact</p>
+                                </div>
+                                <i data-lucide="layout-template" class="w-5 h-5 text-slate-400 shrink-0"></i>
+                            </button>
+
+                            <button type="button" onclick="setStudioTemplate('badge')" id="tpl-btn-badge" class="tpl-btn text-left px-4 py-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 flex items-center justify-between transition-all">
+                                <div>
+                                    <p class="font-bold text-sm text-white">4. Badge Vertical Lanière (Hexagone & Vagues)</p>
+                                    <p class="text-xs text-slate-400">Format portrait avec attache tour de cou</p>
+                                </div>
+                                <i data-lucide="badge-check" class="w-5 h-5 text-slate-400 shrink-0"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- School Name & Year -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div class="sm:col-span-2">
+                            <label for="sim-school-input" class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                                2. Nom de l'école
+                            </label>
+                            <input type="text" id="sim-school-input" value="CEG STE-RITA COTONOU" maxlength="36" class="w-full px-3.5 py-2.5 rounded-xl bg-white/10 border border-white/15 text-white placeholder-slate-400 text-sm focus:outline-none focus:border-emerald-400 transition-colors">
+                        </div>
+                        <div>
+                            <label for="sim-year-input" class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                                Année
+                            </label>
+                            <input type="text" id="sim-year-input" value="2026-2027" maxlength="12" class="w-full px-3.5 py-2.5 rounded-xl bg-white/10 border border-white/15 text-white text-sm focus:outline-none focus:border-emerald-400 transition-colors">
+                        </div>
+                    </div>
+
+                    <!-- Color Palette Picker & Recto/Verso Toggle -->
+                    <div class="flex flex-wrap items-center justify-between gap-4 pt-1">
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+                                3. Couleur d'accent
+                            </label>
+                            <div class="flex items-center gap-2.5">
+                                <button type="button" onclick="setStudioAccent('#0D47A1', '#00ACC1')" class="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-900 to-cyan-500 ring-2 ring-offset-2 ring-offset-navy-950 ring-emerald-400 transition-transform hover:scale-110" title="Bleu Académique & Cyan"></button>
+                                <button type="button" onclick="setStudioAccent('#00897B', '#0F172A')" class="w-8 h-8 rounded-full bg-gradient-to-tr from-teal-600 to-slate-900 ring-2 ring-transparent hover:scale-110 transition-transform" title="Turquoise & Marine"></button>
+                                <button type="button" onclick="setStudioAccent('#047857', '#F59E0B')" class="w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-700 to-amber-500 ring-2 ring-transparent hover:scale-110 transition-transform" title="Vert Émeraude & Or"></button>
+                                <button type="button" onclick="setStudioAccent('#1E3A8A', '#2563EB')" class="w-8 h-8 rounded-full bg-gradient-to-tr from-indigo-950 to-blue-600 ring-2 ring-transparent hover:scale-110 transition-transform" title="Bleu Roi"></button>
+                                <button type="button" onclick="setStudioAccent('#991B1B', '#D97706')" class="w-8 h-8 rounded-full bg-gradient-to-tr from-red-800 to-amber-600 ring-2 ring-transparent hover:scale-110 transition-transform" title="Bordeaux & Or"></button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+                                Face de la carte
+                            </label>
+                            <div class="inline-flex rounded-xl bg-white/10 p-1 border border-white/15">
+                                <button type="button" id="btn-face-recto" onclick="setStudioFace('recto')" class="px-3.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 text-navy-950 transition-all">Recto</button>
+                                <button type="button" id="btn-face-verso" onclick="setStudioFace('verso')" class="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition-all">Verso</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Preview Canvas (Luminous Light Stage) -->
+                <div class="lg:col-span-7 flex flex-col items-center justify-center bg-gradient-to-br from-slate-100 via-slate-200 to-slate-300 rounded-2xl p-6 sm:p-10 border border-white/20 min-h-[430px] shadow-inner relative">
+                    <div id="studio-card-stage" class="w-full flex items-center justify-center transition-all duration-300">
+                        <!-- Rendered dynamically by JS -->
+                    </div>
+                    <p class="text-xs text-slate-600 font-medium mt-6 flex items-center gap-1.5 bg-white/85 px-3.5 py-1.5 rounded-full shadow-sm">
+                        <i data-lucide="printer" class="w-3.5 h-3.5 text-emerald-600"></i>
+                        <span>Rendu haute netteté 300 DPI — Fond blanc / ivoire économique à l'impression</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- 4-Card Comparative Gallery Showcase -->
+            <div class="mt-16">
+                <div class="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4">
+                    <div>
+                        <h3 class="font-display font-bold text-2xl text-white">Aperçu comparatif des 4 présentations</h3>
+                        <p class="text-sm text-slate-400 mt-1">Formats horizontaux officiels, modernes ou badges verticaux avec lanière : chaque école choisit son style.</p>
+                    </div>
+                    <span class="text-xs font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-400/20 px-3 py-1.5 rounded-full self-start sm:self-auto">
+                        Inclus dans tous les abonnements
+                    </span>
+                </div>
+
+                <div id="gallery-showcase-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Populated by JS with the 4 crisp white/light card models -->
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== FONCTIONNALITÉS CLÉS ==================== -->
+    <section id="fonctionnalites" class="py-20 lg:py-28 bg-offwhite">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-16">
+                <span class="text-xs font-bold uppercase tracking-widest text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+                    Conçu pour les secrétariats & directions
+                </span>
+                <h2 class="font-display font-extrabold text-3xl sm:text-4xl text-navy-900 mt-4 mb-4">
+                    Tout ce qu'il faut pour automatiser vos cartes scolaires
+                </h2>
+                <p class="text-slate-600 text-lg">
+                    Une plateforme SaaS pensée pour éliminer les erreurs de saisie et gagner des dizaines d'heures à chaque rentrée scolaire.
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="bg-white rounded-3xl p-7 border border-slate-200/90 shadow-sm hover:shadow-lg transition-all">
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-5">
+                        <i data-lucide="file-spreadsheet" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="font-display font-bold text-xl text-navy-900 mb-2.5">Importation Excel & CSV intelligente</h3>
+                    <p class="text-sm text-slate-600 leading-relaxed">
+                        Téléversez vos fichiers tels quels. ScolarCard détecte automatiquement les colonnes (Nom, Prénom, Classe, Date de naissance, Matricule) et signale les éventuels doublons.
+                    </p>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="bg-white rounded-3xl p-7 border border-slate-200/90 shadow-sm hover:shadow-lg transition-all">
+                    <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-700 flex items-center justify-center mb-5">
+                        <i data-lucide="camera" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="font-display font-bold text-xl text-navy-900 mb-2.5">Association auto des photos</h3>
+                    <p class="text-sm text-slate-600 leading-relaxed">
+                        Importez un dossier ZIP de portraits nommés par matricule ou nom d'élève : chaque photo est recadrée, centrée et associée automatiquement à la bonne fiche.
+                    </p>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="bg-white rounded-3xl p-7 border border-slate-200/90 shadow-sm hover:shadow-lg transition-all">
+                    <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mb-5">
+                        <i data-lucide="qr-code" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="font-display font-bold text-xl text-navy-900 mb-2.5">QR Code & Code-barres anti-fraude</h3>
+                    <p class="text-sm text-slate-600 leading-relaxed">
+                        Chaque carte intègre un identifiant crypté scannable par smartphone ou lecteur optique pour contrôler les accès au portail, à la cantine ou à la bibliothèque.
+                    </p>
+                </div>
+
+                <!-- Feature 4 -->
+                <div class="bg-white rounded-3xl p-7 border border-slate-200/90 shadow-sm hover:shadow-lg transition-all">
+                    <div class="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center mb-5">
+                        <i data-lucide="layers" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="font-display font-bold text-xl text-navy-900 mb-2.5">Planches A4 & Imprimantes PVC</h3>
+                    <p class="text-sm text-slate-600 leading-relaxed">
+                        Exportez au choix en planches PDF A4 (8 ou 10 cartes par page avec traits de coupe) pour plastification, ou en fichiers unitaires CR80 pour imprimante à badges.
+                    </p>
+                </div>
+
+                <!-- Feature 5 -->
+                <div class="bg-white rounded-3xl p-7 border border-slate-200/90 shadow-sm hover:shadow-lg transition-all">
+                    <div class="w-12 h-12 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center mb-5">
+                        <i data-lucide="folder-kanban" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="font-display font-bold text-xl text-navy-900 mb-2.5">Gestion multi-classes & archives</h3>
+                    <p class="text-sm text-slate-600 leading-relaxed">
+                        Organisez vos effectifs par niveau et par classe (de la maternelle à l'université). Rééditez une carte perdue en 3 secondes depuis l'historique sécurisé.
+                    </p>
+                </div>
+
+                <!-- Feature 6 -->
+                <div class="bg-white rounded-3xl p-7 border border-slate-200/90 shadow-sm hover:shadow-lg transition-all">
+                    <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mb-5">
+                        <i data-lucide="shield-check" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="font-display font-bold text-xl text-navy-900 mb-2.5">Sécurité & confidentialité</h3>
+                    <p class="text-sm text-slate-600 leading-relaxed">
+                        Les données nominatives et les photos de vos élèves sont chiffrées et strictement isolées par établissement, avec contrôle des droits d'accès par administrateur.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== TARIFS ==================== -->
+    <section id="tarifs" class="py-20 lg:py-28 bg-white border-t border-slate-200/80">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-12">
+                <span class="text-xs font-bold uppercase tracking-widest text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+                    Tarifs transparents
+                </span>
+                <h2 class="font-display font-extrabold text-3xl sm:text-4xl text-navy-900 mt-4 mb-4">
+                    Une formule adaptée à la taille de votre école
+                </h2>
+                <p class="text-slate-600 text-lg mb-8">
+                    Testez gratuitement avec votre première classe, puis passez à la génération illimitée.
+                </p>
+
+                <!-- Billing Toggle -->
+                <div class="inline-flex items-center bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
+                    <button type="button" id="btn-billing-annual" onclick="toggleBilling('annual')" class="px-5 py-2 rounded-xl text-sm font-bold bg-navy-900 text-white shadow-sm transition-all">
+                        Annuel <span class="text-emerald-400 text-xs ml-1">-25%</span>
+                    </button>
+                    <button type="button" id="btn-billing-monthly" onclick="toggleBilling('monthly')" class="px-5 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:text-navy-900 transition-all">
+                        Mensuel
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid lg:grid-cols-3 gap-8 items-stretch max-w-6xl mx-auto">
+                <!-- Plan 1: Découverte -->
+                <div class="bg-offwhite rounded-3xl p-8 border border-slate-200 flex flex-col justify-between">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Découverte</span>
+                        <h3 class="font-display font-extrabold text-2xl text-navy-900 mt-1">Essai Gratuit</h3>
+                        <p class="text-sm text-slate-600 mt-2">Idéal pour tester l'import Excel sur une première classe.</p>
+                        <div class="my-6">
+                            <span class="font-display font-extrabold text-4xl text-navy-900">0 €</span>
+                            <span class="text-sm text-slate-500"> / 50 premières cartes</span>
+                        </div>
+                        <ul class="space-y-3 text-sm text-slate-700 mb-8">
+                            <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-emerald-600 shrink-0"></i> Jusqu'à 50 cartes élèves offertes</li>
+                            <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-emerald-600 shrink-0"></i> Import Excel (.xlsx) et CSV</li>
+                            <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-emerald-600 shrink-0"></i> Accès aux 4 modèles lumineux</li>
+                            <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-emerald-600 shrink-0"></i> Export PDF haute définition</li>
+                        </ul>
+                    </div>
+                    <button type="button" onclick="openModal('signup')" class="w-full py-3.5 rounded-xl bg-white hover:bg-slate-100 text-navy-900 border border-slate-300 font-bold text-sm transition-colors">
+                        Démarrer gratuitement
+                    </button>
+                </div>
+
+                <!-- Plan 2: Établissement (Popular) -->
+                <div class="bg-navy-900 text-white rounded-3xl p-8 border-2 border-emerald-400 shadow-2xl shadow-navy-900/20 flex flex-col justify-between relative">
+                    <span class="absolute -top-3.5 right-6 bg-emerald-500 text-navy-950 text-xs font-extrabold uppercase tracking-wider px-3.5 py-1 rounded-full shadow-md">
+                        Le plus choisi
+                    </span>
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-emerald-400">Établissement</span>
+                        <h3 class="font-display font-extrabold text-2xl text-white mt-1">École / Collège / Lycée</h3>
+                        <p class="text-sm text-slate-300 mt-2">Pour un établissement complet avec élèves illimités.</p>
+                        <div class="my-6">
+                            <span id="price-etablissement" class="font-display font-extrabold text-4xl text-white">29 €</span>
+                            <span id="period-etablissement" class="text-sm text-slate-400"> / mois (facturé 348 €/an)</span>
+                        </div>
+                        <ul class="space-y-3 text-sm text-slate-200 mb-8">
+                            <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-emerald-400 shrink-0"></i> <strong>Cartes et classes illimitées</strong></li>
+                            <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-emerald-400 shrink-0"></i> Import photos en lot (.ZIP)</li>
+                            <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-emerald-400 shrink-0"></i> QR Code & Code-barres uniques</li>
+                            <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-emerald-400 shrink-0"></i> Logo, cachet & signature du directeur</li>
+                            <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-emerald-400 shrink-0"></i> Export planches A4 & PVC CR80</li>
+                        </ul>
+                    </div>
+                    <button type="button" onclick="openModal('signup')" class="w-full py-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-navy-950 font-extrabold text-sm shadow-lg transition-all">
+                        Choisir l'offre Établissement
+                    </button>
+                </div>
+
+                <!-- Plan 3: Groupe Scolaire -->
+                <div class="bg-offwhite rounded-3xl p-8 border border-slate-200 flex flex-col justify-between">
+                    <div>
+                        <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Multi-Sites</span>
+                        <h3 class="font-display font-extrabold text-2xl text-navy-900 mt-1">Groupe Scolaire</h3>
+                        <p class="text-sm text-slate-600 mt-2">Pour les réseaux d'écoles, campus et universités.</p>
+                        <div class="my-6">
+                            <span id="price-groupe" class="font-display font-extrabold text-4xl text-navy-900">79 €</span>
+                            <span id="period-groupe" class="text-sm text-slate-500"> / mois (facturé 948 €/an)</span>
+                        </div>
+                        <ul class="space-y-3 text-sm text-slate-700 mb-8">
+                            <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-emerald-600 shrink-0"></i> Jusqu'à 10 établissements inclus</li>
+                            <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-emerald-600 shrink-0"></i> Modèles sur-mesure à vos couleurs</li>
+                            <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-emerald-600 shrink-0"></i> Comptes secrétaires multi-utilisateurs</li>
+                            <li class="flex items-center gap-2.5"><i data-lucide="check" class="w-4 h-4 text-emerald-600 shrink-0"></i> Support prioritaire & accompagnement</li>
+                        </ul>
+                    </div>
+                    <button type="button" onclick="openModal('signup')" class="w-full py-3.5 rounded-xl bg-navy-900 hover:bg-navy-800 text-white font-bold text-sm transition-colors">
+                        Créer un compte Groupe
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== FAQ ==================== -->
+    <section id="faq" class="py-20 lg:py-28 bg-offwhite border-t border-slate-200/80">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-14">
+                <span class="text-xs font-bold uppercase tracking-widest text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full border border-emerald-200">
+                    Questions fréquentes
+                </span>
+                <h2 class="font-display font-extrabold text-3xl sm:text-4xl text-navy-900 mt-4">
+                    Tout savoir sur ScolarCard
+                </h2>
+            </div>
+
+            <div class="space-y-4">
+                <!-- FAQ 1 -->
+                <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                    <button type="button" class="faq-trigger w-full px-6 py-5 text-left flex items-center justify-between gap-4 font-display font-bold text-navy-900 hover:bg-slate-50 transition-colors">
+                        <span>Quel format de fichier Excel dois-je préparer ?</span>
+                        <i data-lucide="chevron-down" class="w-5 h-5 text-slate-400 transition-transform duration-200 shrink-0"></i>
+                    </button>
+                    <div class="faq-content hidden px-6 pb-5 text-sm text-slate-600 leading-relaxed border-t border-slate-100 pt-3">
+                        N'importe quel tableau Excel (.xlsx, .xls) ou fichier CSV standard fonctionne ! Un fichier modèle pré-formaté est également téléchargeable dès votre inscription avec les colonnes classiques (Matricule, Nom, Prénoms, Date de naissance, Classe, Contact parent).
+                    </div>
+                </div>
+
+                <!-- FAQ 2 -->
+                <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                    <button type="button" class="faq-trigger w-full px-6 py-5 text-left flex items-center justify-between gap-4 font-display font-bold text-navy-900 hover:bg-slate-50 transition-colors">
+                        <span>Comment associer les photos des élèves automatiquement ?</span>
+                        <i data-lucide="chevron-down" class="w-5 h-5 text-slate-400 transition-transform duration-200 shrink-0"></i>
+                    </button>
+                    <div class="faq-content hidden px-6 pb-5 text-sm text-slate-600 leading-relaxed border-t border-slate-100 pt-3">
+                        Il vous suffit de nommer chaque photo avec le numéro matricule de l'élève (ex: <code>12345678901.jpg</code>) et d'importer le dossier compressé (.ZIP). ScolarCard relie instantanément chaque portrait à la bonne ligne Excel. Vous pouvez aussi ajouter ou remplacer une photo manuellement en un clic.
+                    </div>
+                </div>
+
+                <!-- FAQ 3 -->
+                <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                    <button type="button" class="faq-trigger w-full px-6 py-5 text-left flex items-center justify-between gap-4 font-display font-bold text-navy-900 hover:bg-slate-50 transition-colors">
+                        <span>Peut-on imprimer les cartes sur une imprimante de bureau classique ?</span>
+                        <i data-lucide="chevron-down" class="w-5 h-5 text-slate-400 transition-transform duration-200 shrink-0"></i>
+                    </button>
+                    <div class="faq-content hidden px-6 pb-5 text-sm text-slate-600 leading-relaxed border-t border-slate-100 pt-3">
+                        Oui ! Grâce à nos gabarits lumineux à fond blanc ou ivoire, vous économisez l'encre et obtenez un rendu net sur papier bristol A4 (8 cartes par feuille avec repères de découpe avant plastification) ou directement sur cartes PVC via une imprimante à badges (Evolis, Zebra, Fargo).
+                    </div>
+                </div>
+
+                <!-- FAQ 4 -->
+                <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                    <button type="button" class="faq-trigger w-full px-6 py-5 text-left flex items-center justify-between gap-4 font-display font-bold text-navy-900 hover:bg-slate-50 transition-colors">
+                        <span>Les données et photos des élèves sont-elles protégées ?</span>
+                        <i data-lucide="chevron-down" class="w-5 h-5 text-slate-400 transition-transform duration-200 shrink-0"></i>
+                    </button>
+                    <div class="faq-content hidden px-6 pb-5 text-sm text-slate-600 leading-relaxed border-t border-slate-100 pt-3">
+                        Absolument. Chaque établissement dispose d'un espace cloisonné et chiffré. Vos fichiers élèves ne sont jamais partagés ni revendus, et vous pouvez purger ou archiver les données d'une année scolaire à tout moment.
+                    </div>
+                </div>
+
+                <!-- FAQ 5 -->
+                <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+                    <button type="button" class="faq-trigger w-full px-6 py-5 text-left flex items-center justify-between gap-4 font-display font-bold text-navy-900 hover:bg-slate-50 transition-colors">
+                        <span>Combien de temps faut-il pour générer 800 cartes ?</span>
+                        <i data-lucide="chevron-down" class="w-5 h-5 text-slate-400 transition-transform duration-200 shrink-0"></i>
+                    </button>
+                    <div class="faq-content hidden px-6 pb-5 text-sm text-slate-600 leading-relaxed border-t border-slate-100 pt-3">
+                        Moins de 45 secondes ! Une fois vos fichiers Excel par classe importés, la génération des 800 cartes recto-verso et l'assemblage du PDF prêt à imprimer s'effectuent automatiquement en arrière-plan.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== FINAL CTA BANNER ==================== -->
+    <section class="py-16 bg-navy-900 text-white relative overflow-hidden">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+            <h2 class="font-display font-extrabold text-3xl sm:text-4xl mb-4">
+                Prêt à digitaliser les cartes scolaires de votre établissement ?
+            </h2>
+            <p class="text-slate-300 text-lg mb-8 max-w-2xl mx-auto">
+                Inscrivez votre école en 2 minutes et générez gratuitement vos 50 premières cartes élèves à partir de votre fichier Excel.
+            </p>
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <button type="button" onclick="openModal('signup')" class="w-full sm:w-auto px-8 py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-navy-950 font-extrabold text-base shadow-xl transition-all hover:-translate-y-0.5">
+                    Créer mon espace école gratuitement
+                </button>
+                <a href="#simulateur" class="w-full sm:w-auto px-8 py-4 rounded-2xl bg-white/10 hover:bg-white/15 text-white border border-white/15 font-semibold text-base transition-all">
+                    Revoir les 4 modèles
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ==================== FOOTER ==================== -->
+    <footer class="bg-navy-950 text-slate-400 py-14 border-t border-white/10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-4 gap-10 pb-10 border-b border-white/10">
+                <div class="md:col-span-2">
+                    <a href="#" class="flex items-center gap-3 mb-4">
+                        <div class="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-400/30 flex items-center justify-center text-emerald-400">
+                            <i data-lucide="id-card" class="w-5 h-5"></i>
+                        </div>
+                        <span class="font-display font-extrabold text-xl text-white">
+                            Scolar<span class="text-emerald-400">Card</span>
+                        </span>
+                    </a>
+                    <p class="text-sm text-slate-400 max-w-md leading-relaxed">
+                        La plateforme SaaS de référence pour les établissements scolaires souhaitant automatiser la création et l'impression de cartes d'identité élèves depuis Excel.
+                    </p>
+                </div>
+
+                <div>
+                    <h4 class="font-display font-bold text-white text-sm uppercase tracking-wider mb-4">Plateforme</h4>
+                    <ul class="space-y-2.5 text-sm">
+                        <li><a href="#comment-ca-marche" class="hover:text-emerald-400 transition-colors">Comment ça marche</a></li>
+                        <li><a href="#simulateur" class="hover:text-emerald-400 transition-colors">Modèles de cartes</a></li>
+                        <li><a href="#fonctionnalites" class="hover:text-emerald-400 transition-colors">Fonctionnalités</a></li>
+                        <li><a href="#tarifs" class="hover:text-emerald-400 transition-colors">Tarifs</a></li>
+                    </ul>
+                </div>
+
+                <div>
+                    <h4 class="font-display font-bold text-white text-sm uppercase tracking-wider mb-4">Support & Légal</h4>
+                    <ul class="space-y-2.5 text-sm">
+                        <li><a href="#faq" class="hover:text-emerald-400 transition-colors">Centre d'aide & FAQ</a></li>
+                        <li><button type="button" onclick="openModal('login')" class="hover:text-emerald-400 transition-colors">Espace Établissement</button></li>
+                        <li><a href="#" class="hover:text-emerald-400 transition-colors">Confidentialité des données</a></li>
+                        <li><a href="#" class="hover:text-emerald-400 transition-colors">Conditions d'utilisation</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
+                <p>© 2026 ScolarCard SaaS. Tous droits réservés.</p>
+                <p class="flex items-center gap-1.5 text-slate-500">
+                    <i data-lucide="shield-check" class="w-4 h-4 text-emerald-500"></i>
+                    <span>Génération sécurisée haute précision 300 DPI</span>
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ==================== AUTH MODAL (INSCRIPTION / CONNEXION) ==================== -->
+    <div id="auth-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-navy-950/75 backdrop-blur-sm p-4">
+        <div class="bg-white rounded-3xl max-w-md w-full p-7 sm:p-8 shadow-2xl border border-slate-200 relative animate-fadeIn">
+            <button type="button" onclick="closeModal()" class="absolute top-5 right-5 p-2 rounded-xl text-slate-400 hover:text-navy-900 hover:bg-slate-100 transition-colors" aria-label="Fermer">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+
+            <div class="w-12 h-12 rounded-2xl bg-navy-900 text-emerald-400 flex items-center justify-center mb-4 shadow-md">
+                <i data-lucide="school" class="w-6 h-6"></i>
+            </div>
+
+            <h3 id="modal-title" class="font-display font-extrabold text-2xl text-navy-900">Inscrire votre établissement</h3>
+            <p id="modal-subtitle" class="text-sm text-slate-600 mt-1 mb-6">Créez votre espace école et générez vos 50 premières cartes gratuitement.</p>
+
+            <form onsubmit="handleAuthSubmit(event)" class="space-y-4">
+                <div id="school-field-group">
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">Nom de l'établissement</label>
+                    <input type="text" required placeholder="Ex: Collège d'Enseignement Général..." class="w-full px-4 py-3 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-emerald-600">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">Email professionnel / Secrétariat</label>
+                    <input type="email" required placeholder="direction@ecole.edu" class="w-full px-4 py-3 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-emerald-600">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">Mot de passe</label>
+                    <input type="password" required placeholder="••••••••" class="w-full px-4 py-3 rounded-xl border border-slate-300 text-sm focus:outline-none focus:border-emerald-600">
+                </div>
+
+                <button type="submit" id="modal-submit-btn" class="w-full py-3.5 rounded-xl bg-navy-900 hover:bg-navy-800 text-white font-bold text-sm shadow-lg transition-all">
+                    Créer mon espace école
+                </button>
+            </form>
+
+            <p class="text-center text-xs text-slate-500 mt-5">
+                <span id="modal-switch-text">Déjà inscrit ?</span>
+                <button type="button" id="modal-switch-btn" onclick="switchModalMode()" class="font-bold text-emerald-600 hover:underline ml-1">Se connecter</button>
+            </p>
+        </div>
+    </div>
+
+    <!-- ==================== TOAST NOTIFICATION ==================== -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 hidden items-center gap-3 bg-navy-900 text-white px-5 py-3.5 rounded-2xl shadow-2xl border border-emerald-400/30">
+        <div class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+            <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+        </div>
+        <p id="toast-message" class="text-sm font-medium"></p>
+    </div>
+
+    <!-- ==================== JAVASCRIPT LOGIC ==================== -->
+    <script>
+        // 1. Mobile Menu Toggle
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+
+        mobileMenuBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        document.querySelectorAll('.mobile-nav-link').forEach(link => {
+            link.addEventListener('click', () => {
+                mobileMenu.classList.add('hidden');
+            });
+        });
+
+        // 2. Sample Students Data (Authentic African Students)
+        const sampleStudents = [
+            {
+                row: 1,
+                matricule: '12345678901',
+                shortId: 'SC-2026-0841',
+                nom: 'DUPONT',
+                prenoms: 'Tété Gbodja Sènankpon',
+                fullName: 'Tété Gbodja DUPONT',
+                classe: '3ème M5',
+                dob: '09/08/2009 à Cotonou',
+                dobShort: '09/08/2009',
+                nationalite: 'Béninoise',
+                contact: '+229 01 97 42 18 05',
+                tuteur: 'M. Komlan DUPONT',
+                ecole: 'CEG STE-RITA COTONOU',
+                slogan: 'Discipline • Travail • Excellence',
+                photo: 'https://images.unsplash.com/photo-1531384441138-2736e62e0919?auto=format&fit=crop&w=300&q=85',
+                templateIndex: 0
+            },
+            {
+                row: 2,
+                matricule: '2026-LAEL-042',
+                shortId: 'SC-2026-0842',
+                nom: 'SAMBA',
+                prenoms: 'Varlo Junior',
+                fullName: 'SAMBA VARLO',
+                classe: 'CE2',
+                dob: '14/05/2016 à Brazzaville',
+                dobShort: '14/05/2016',
+                nationalite: 'Congolaise',
+                contact: '+242 06 612 45 89',
+                tuteur: 'Mme Clarisse SAMBA',
+                ecole: 'ÉCOLE LAEL',
+                slogan: 'Savoir et Réussite',
+                photo: 'https://images.unsplash.com/photo-1503919545889-aef636e10ad4?auto=format&fit=crop&w=300&q=85',
+                templateIndex: 1
+            },
+            {
+                row: 3,
+                matricule: '2026-ABC-119',
+                shortId: 'SC-2026-0843',
+                nom: 'DIALLO',
+                prenoms: 'Awa Fatoumata',
+                fullName: 'Awa Fatoumata DIALLO',
+                classe: '2nde C',
+                dob: '22/09/2010 à Dakar',
+                dobShort: '22/09/2010',
+                nationalite: 'Sénégalaise',
+                contact: '+221 77 540 12 30',
+                tuteur: 'M. Mamadou DIALLO',
+                ecole: 'GROUPE SCOLAIRE LES ÉLITES',
+                slogan: 'L’excellence pour chaque élève',
+                photo: 'https://images.unsplash.com/photo-1523824921871-d6f1a15151f1?auto=format&fit=crop&w=300&q=85',
+                templateIndex: 2
+            },
+            {
+                row: 4,
+                matricule: '2026-TCD-308',
+                shortId: 'SC-2026-0844',
+                nom: 'MENSAH',
+                prenoms: 'Koffi David',
+                fullName: 'Koffi David MENSAH',
+                classe: 'Tle D1',
+                dob: '03/11/2008 à Lomé',
+                dobShort: '03/11/2008',
+                nationalite: 'Togolaise',
+                contact: '+228 90 14 78 22',
+                tuteur: 'Mme Akossiwa MENSAH',
+                ecole: 'COLLÈGE SAINT-JOSEPH',
+                slogan: 'Rigueur & Avenir',
+                photo: 'https://images.unsplash.com/photo-1507152832244-10d45c7eda57?auto=format&fit=crop&w=300&q=85',
+                templateIndex: 3
+            }
+        ];
+
+        const fallbackAvatarSvg = `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 140" fill="none"><rect width="120" height="140" fill="#E2E8F0"/><circle cx="60" cy="48" r="24" fill="#4A2E1B"/><path d="M22 132c0-22 17-38 38-38s38 16 38 38" fill="#1E3A8A"/><circle cx="60" cy="52" r="19" fill="#6F442A"/></svg>`)}`;
+
+        const qrSvgMarkup = (sizeClass = 'w-14 h-14') => `
+            <svg class="${sizeClass} text-slate-900" viewBox="0 0 36 36" fill="currentColor">
+                <path d="M2 2h10v10H2V2zm2 2v6h6V4H4zm2 2h2v2H6V6zm18-4h10v10H24V2zm2 2v6h6V4h-6zm2 2h2v2h-2V6zM2 24h10v10H2V24zm2 2v6h6v-6H4zm2 2h2v2H6v-2zm10-24h2v4h-2V4zm4 0h2v2h-2V4zm-4 6h4v2h-4v-2zm-2 4h2v4h-2v-4zm4 2h4v2h-4v-2zm6 0h2v4h-2v-4zm4 0h4v2h-4v-2zm-18 4h4v2h-4v-2zm6 0h2v4h-2v-4zm4 2h4v2h-4v-2zm6 0h2v4h-2v-4zm-14 4h2v6h-2v-6zm4 2h4v2h-4v-2zm6 0h2v4h-2v-4zm4 2h4v2h-4v-2zm-8 4h6v2h-6v-2z"/>
+            </svg>
+        `;
+
+        const emblemSvg = `
+            <svg class="w-9 h-9 shrink-0" viewBox="0 0 48 48" fill="none">
+                <path d="M24 4L8 10v12c0 11 6.8 20.8 16 24 9.2-3.2 16-13 16-24V10L24 4z" fill="#FEF08A" stroke="#15803D" stroke-width="2.5"/>
+                <path d="M24 8L12 12.5v9.5c0 8.5 5 16 12 18.8 7-2.8 12-10.3 12-18.8v-9.5L24 8z" fill="#16A34A"/>
+                <circle cx="24" cy="22" r="6" fill="#FACC15"/>
+                <path d="M16 32h16" stroke="#DC2626" stroke-width="3" stroke-linecap="round"/>
+            </svg>
+        `;
+
+        // 3. Renderers for the 4 Crisp Light Card Templates
+        function renderTemplateOfficiel(student, options = {}) {
+            const school = options.schoolName || student.ecole;
+            const year = options.year || '2026-2027';
+            const face = options.face || 'recto';
+
+            if (face === 'verso') {
+                return `
+                    <div class="w-full max-w-[440px] bg-white text-slate-900 rounded-xl shadow-xl border border-slate-300 p-5 select-none">
+                        <div class="flex items-center justify-between border-b-2 border-emerald-700 pb-2.5 mb-3">
+                            <span class="font-display font-extrabold text-xs uppercase tracking-wider text-emerald-800">Règlement & Validité — ${school}</span>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 border border-slate-300">${year}</span>
+                        </div>
+                        <ul class="text-[11px] text-slate-700 space-y-1.5 list-disc pl-4 mb-4 leading-snug">
+                            <li>Cette carte est strictement personnelle et doit être présentée à toute réquisition de l'administration.</li>
+                            <li>En cas de perte, prière de la rapporter au secrétariat de <strong>${school}</strong>.</li>
+                            <li>Toute falsification expose son auteur aux sanctions disciplinaires prévues.</li>
+                        </ul>
+                        <div class="flex items-end justify-between pt-2 border-t border-slate-200">
+                            <div class="text-[10px] text-slate-600 space-y-0.5">
+                                <p><strong>Matricule :</strong> ${student.matricule}</p>
+                                <p><strong>Urgence Parent :</strong> ${student.contact}</p>
+                                <div class="flex h-1.5 w-28 mt-1.5 rounded overflow-hidden">
+                                    <span class="flex-1 bg-emerald-600"></span>
+                                    <span class="flex-1 bg-amber-400"></span>
+                                    <span class="flex-1 bg-rose-600"></span>
+                                </div>
+                            </div>
+                            <div class="text-center">
+                                <p class="text-[9px] uppercase font-bold text-slate-500">Le Directeur / Proviseur</p>
+                                <p class="font-signature text-xl text-blue-900 leading-none my-1">A. Houngbédji</p>
+                                <div class="w-24 border-t border-slate-400"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="w-full max-w-[440px] bg-white text-slate-900 rounded-xl shadow-xl border border-slate-300 p-4 sm:p-5 select-none relative overflow-hidden">
+                    <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.04]">
+                        <span class="font-display font-black text-5xl -rotate-12 tracking-widest text-slate-900">OFFICIEL</span>
+                    </div>
+
+                    <div class="flex items-start justify-between gap-2 relative z-10">
+                        <div class="flex items-start gap-2">
+                            ${emblemSvg}
+                            <div>
+                                <p class="text-[8px] sm:text-[9px] font-bold leading-tight text-blue-900 uppercase">
+                                    Ministère des Enseignements Secondaire,<br>Technique et de la Formation Professionnelle
+                                </p>
+                                <div class="flex h-1 w-32 my-1">
+                                    <span class="flex-1 bg-emerald-600"></span>
+                                    <span class="flex-1 bg-amber-400"></span>
+                                    <span class="flex-1 bg-rose-600"></span>
+                                </div>
+                                <p class="text-[9px] font-extrabold tracking-wide text-slate-800 uppercase">République • Fraternité • Justice</p>
+                            </div>
+                        </div>
+                        <div class="text-right shrink-0">
+                            <p class="font-display font-black text-xs sm:text-sm leading-tight text-slate-950 uppercase max-w-[140px]">${school}</p>
+                        </div>
+                    </div>
+
+                    <div class="text-center my-2 relative z-10">
+                        <span class="font-display font-extrabold text-[11px] sm:text-xs uppercase tracking-wide text-slate-900 border-b-2 border-slate-900 pb-0.5">
+                            CARTE D'IDENTITÉ SCOLAIRE ${year}
+                        </span>
+                    </div>
+
+                    <div class="flex items-start gap-3.5 mt-2.5 relative z-10">
+                        <div class="w-20 h-24 sm:w-[88px] sm:h-[104px] rounded border border-slate-300 bg-slate-100 overflow-hidden shrink-0 shadow-sm">
+                            <img src="${student.photo}" alt="${student.fullName}" class="w-full h-full object-cover" onerror="this.src='${fallbackAvatarSvg}'">
+                        </div>
+
+                        <div class="flex-1 min-w-0 text-[10px] sm:text-[11px] space-y-1 text-slate-900">
+                            <p class="truncate"><span class="font-bold underline">Nom</span> : <strong class="uppercase">${student.nom}</strong></p>
+                            <p class="truncate"><span class="font-bold underline">Prénoms</span> : <span class="font-semibold">${student.prenoms}</span></p>
+                            <p class="truncate"><span class="font-bold underline">Né(e) le</span> : ${student.dob}</p>
+                            <p class="truncate"><span class="font-bold underline">Nationalité</span> : ${student.nationalite}</p>
+                            <p class="truncate"><span class="font-bold underline">Contact</span> : ${student.contact}</p>
+                            <div class="flex items-center justify-between gap-2 pt-0.5">
+                                <p><span class="font-bold underline">Classe</span> : <strong class="text-blue-900">${student.classe}</strong></p>
+                            </div>
+                            <div class="flex items-center justify-between gap-2 pt-0.5">
+                                <span class="text-[9px] font-bold underline shrink-0">Signature de l'apprenant :</span>
+                                <div class="w-20 h-6 border border-cyan-500 bg-cyan-50/30 rounded-sm"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between mt-2.5 pt-1.5 border-t border-slate-200 relative z-10">
+                        <p class="text-[10px] font-mono font-bold text-slate-900"><span class="underline">Mle</span> : ${student.matricule}</p>
+                        <div class="flex h-1 w-24">
+                            <span class="flex-1 bg-emerald-600"></span>
+                            <span class="flex-1 bg-amber-400"></span>
+                            <span class="flex-1 bg-rose-600"></span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderTemplateNumerique(student, options = {}) {
+            const school = options.schoolName || student.ecole;
+            const year = options.year || '2026-2027';
+            const face = options.face || 'recto';
+
+            if (face === 'verso') {
+                return `
+                    <div class="w-full max-w-[440px] bg-[#F4F1EA] text-slate-900 rounded-2xl shadow-xl border border-stone-300 p-5 select-none">
+                        <div class="border-y-2 border-slate-700 py-1.5 mb-3 text-center">
+                            <p class="font-display font-extrabold text-xs uppercase tracking-widest text-slate-800">AUTHENTIFICATION NUMÉRIQUE</p>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <div class="bg-white p-2 rounded-xl border border-stone-300 shrink-0">
+                                ${qrSvgMarkup('w-20 h-20')}
+                            </div>
+                            <div class="text-[11px] text-slate-700 space-y-1.5">
+                                <p>Scannez ce <strong>QR Code</strong> pour vérifier en temps réel la validité de l'inscription de <strong>${student.fullName}</strong>.</p>
+                                <p class="text-[10px] font-mono bg-white px-2 py-1 rounded border border-stone-300 inline-block">ID: ${student.shortId}</p>
+                                <p class="text-[10px] text-slate-500">Contact urgence : ${student.contact}</p>
+                            </div>
+                        </div>
+                        <div class="border-t border-slate-600 mt-4 pt-2 text-center text-[10px] font-bold text-slate-800">
+                            Réseau Scolaire Numérique • ${school}
+                        </div>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="w-full max-w-[440px] bg-[#F4F1EA] text-slate-900 rounded-2xl shadow-xl border border-stone-300 p-4 sm:p-5 select-none">
+                    <div class="border-t border-slate-500 pt-2 flex items-center justify-between gap-2">
+                        <div class="flex items-center gap-2">
+                            <span class="font-display font-black text-lg tracking-tight text-emerald-900">SN</span>
+                            <div class="w-8 h-5 rounded-sm overflow-hidden flex shadow-xs border border-stone-300">
+                                <span class="flex-1 bg-emerald-600"></span>
+                                <span class="flex-1 bg-amber-400"></span>
+                                <span class="flex-1 bg-rose-600"></span>
+                            </div>
+                            ${emblemSvg}
+                        </div>
+                        <p class="text-[8px] font-bold uppercase leading-tight text-slate-700 max-w-[190px]">
+                            Ministère de l'Enseignement Préscolaire, Primaire, Secondaire et de l'Alphabétisation
+                        </p>
+                    </div>
+
+                    <div class="border-y border-slate-600 py-1 my-2 text-center">
+                        <h4 class="font-display font-extrabold text-sm sm:text-base tracking-wide text-[#1B3B5A] uppercase">
+                            CARTE SCOLAIRE NUMÉRIQUE
+                        </h4>
+                    </div>
+
+                    <div class="flex items-center gap-3.5 my-2.5">
+                        <div class="w-20 h-24 sm:w-24 sm:h-28 rounded-xl overflow-hidden bg-sky-100 border border-stone-300 shrink-0 shadow-xs">
+                            <img src="${student.photo}" alt="${student.fullName}" class="w-full h-full object-cover" onerror="this.src='${fallbackAvatarSvg}'">
+                        </div>
+
+                        <div class="flex-1 min-w-0">
+                            <p class="font-display font-extrabold text-sm sm:text-base text-[#1B3B5A] uppercase truncate">${student.fullName}</p>
+                            <p class="font-bold text-xs sm:text-sm text-slate-800 mt-0.5">${student.classe}</p>
+                            <p class="font-bold text-xs text-slate-700 uppercase truncate mt-0.5">${school}</p>
+                            <div class="mt-2 text-[11px] text-slate-600 leading-tight">
+                                <p>Année scolaire</p>
+                                <p class="font-bold text-slate-800">${year}</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-1.5 rounded-lg border border-stone-300 shrink-0 shadow-2xs">
+                            ${qrSvgMarkup('w-14 h-14 sm:w-16 sm:h-16')}
+                        </div>
+                    </div>
+
+                    <div class="border-t border-slate-600 pt-1.5 text-center">
+                        <p class="font-display font-bold text-[10px] sm:text-xs text-slate-900 tracking-wide">
+                            Portail Éducatif Numérique • Matricule ${student.shortId}
+                        </p>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderTemplateModerne(student, options = {}) {
+            const school = options.schoolName || student.ecole;
+            const year = options.year || '2026-2027';
+            const primary = options.primaryColor || '#0D47A1';
+            const secondary = options.secondaryColor || '#00ACC1';
+            const face = options.face || 'recto';
+
+            if (face === 'verso') {
+                return `
+                    <div class="w-full max-w-[440px] bg-white text-slate-900 rounded-2xl shadow-xl border border-slate-200 overflow-hidden select-none">
+                        <div class="px-5 py-3 flex items-center justify-between text-white" style="background: linear-gradient(135deg, ${primary} 0%, ${secondary} 100%);">
+                            <span class="font-display font-extrabold text-xs uppercase tracking-wider">Conditions d'utilisation</span>
+                            <span class="text-[10px] font-bold">Validité : ${year}</span>
+                        </div>
+                        <div class="p-4 text-[10px] text-slate-600 space-y-2">
+                            <ul class="list-disc pl-4 space-y-1">
+                                <li>Cette carte atteste de l'inscription régulière de l'élève au sein de <strong>${school}</strong>.</li>
+                                <li>Elle donne accès aux salles d'examen, à la bibliothèque et aux transports scolaires.</li>
+                            </ul>
+                            <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+                                <div class="space-y-0.5 text-slate-800">
+                                    <p><strong>Tél. École :</strong> +229 01 21 30 45 00</p>
+                                    <p><strong>Email :</strong> contact@ecole-excellence.edu</p>
+                                    <p><strong>Urgence :</strong> ${student.contact}</p>
+                                </div>
+                                <div class="p-1.5 bg-slate-50 rounded-lg border border-slate-200">
+                                    ${qrSvgMarkup('w-12 h-12')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="w-full max-w-[440px] bg-white text-slate-900 rounded-2xl shadow-xl border border-slate-200 overflow-hidden select-none">
+                    <div class="flex items-stretch h-14 relative">
+                        <div class="w-[38%] bg-white flex items-center gap-2 pl-4 pr-2 z-10">
+                            <div class="w-8 h-8 rounded-lg flex items-center justify-center text-white font-display font-black text-xs shrink-0" style="background-color: ${primary};">
+                                SC
+                            </div>
+                            <div class="leading-none">
+                                <p class="font-display font-extrabold text-[10px] text-slate-900 uppercase">ÉTABLISSEMENT</p>
+                                <p class="text-[8px] font-semibold text-slate-500">CERTIFIÉ • ${year}</p>
+                            </div>
+                        </div>
+                        <div class="flex-1 flex flex-col justify-center items-end pr-4 pl-6 text-white text-right relative" style="background: linear-gradient(135deg, ${secondary} 0%, ${primary} 100%); clip-path: polygon(12% 0, 100% 0, 100% 100%, 0% 100%);">
+                            <h4 class="font-display font-extrabold text-xs sm:text-sm uppercase tracking-tight leading-tight truncate max-w-[210px]">${school}</h4>
+                            <p class="text-[9px] opacity-90 uppercase tracking-wider truncate max-w-[200px]">${student.slogan}</p>
+                        </div>
+                    </div>
+
+                    <div class="px-5 py-3.5 flex items-center gap-4">
+                        <div class="w-20 h-24 sm:w-24 sm:h-28 rounded-lg p-0.5 shrink-0 shadow-sm" style="border: 2px solid ${primary};">
+                            <img src="${student.photo}" alt="${student.fullName}" class="w-full h-full object-cover rounded-md" onerror="this.src='${fallbackAvatarSvg}'">
+                        </div>
+
+                        <div class="flex-1 min-w-0 text-[10px] sm:text-[11px] space-y-1">
+                            <div class="grid grid-cols-12">
+                                <span class="col-span-5 font-bold text-slate-700">Matricule</span>
+                                <span class="col-span-7 font-mono font-semibold text-slate-900 truncate">: ${student.shortId}</span>
+                            </div>
+                            <div class="grid grid-cols-12">
+                                <span class="col-span-5 font-bold text-slate-700">Élève</span>
+                                <span class="col-span-7 font-extrabold text-slate-950 truncate">: ${student.fullName}</span>
+                            </div>
+                            <div class="grid grid-cols-12">
+                                <span class="col-span-5 font-bold text-slate-700">Parent/Tuteur</span>
+                                <span class="col-span-7 text-slate-800 truncate">: ${student.tuteur}</span>
+                            </div>
+                            <div class="grid grid-cols-12">
+                                <span class="col-span-5 font-bold text-slate-700">Classe</span>
+                                <span class="col-span-7 font-bold truncate" style="color: ${primary};">: ${student.classe}</span>
+                            </div>
+                            <div class="grid grid-cols-12">
+                                <span class="col-span-5 font-bold text-slate-700">Né(e) le</span>
+                                <span class="col-span-7 text-slate-800 truncate">: ${student.dobShort}</span>
+                            </div>
+                            <div class="grid grid-cols-12">
+                                <span class="col-span-5 font-bold text-slate-700">Urgence</span>
+                                <span class="col-span-7 font-semibold text-slate-800 truncate">: ${student.contact}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex items-stretch h-12">
+                        <div class="w-[62%] px-4 flex flex-col justify-center text-white text-[9px]" style="background: linear-gradient(135deg, ${primary} 0%, ${secondary} 100%); clip-path: polygon(0 0, 90% 0, 100% 100%, 0% 100%);">
+                            <p class="truncate opacity-95">Année scolaire ${year} • Carte officielle</p>
+                            <p class="font-semibold truncate">Tél. Secrétariat : +229 01 97 00 00 00</p>
+                        </div>
+                        <div class="flex-1 bg-white flex flex-col items-center justify-center pr-3">
+                            <span class="font-signature text-lg text-slate-800 leading-none">K. Mensah</span>
+                            <span class="text-[8px] font-bold uppercase tracking-wider text-slate-600 border-t border-slate-300 px-2 mt-0.5">Le Directeur</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderTemplateBadge(student, options = {}) {
+            const school = options.schoolName || student.ecole;
+            const year = options.year || '2026-2027';
+            const primary = options.primaryColor || '#00897B';
+            const secondary = options.secondaryColor || '#0F172A';
+            const face = options.face || 'recto';
+
+            if (face === 'verso') {
+                return `
+                    <div class="w-[245px] bg-white text-slate-900 rounded-2xl shadow-xl border border-slate-200 overflow-hidden select-none mx-auto">
+                        <div class="h-12 relative flex items-center justify-center text-white" style="background-color: ${primary};">
+                            <span class="font-display font-extrabold text-[11px] uppercase tracking-wider">Verso • Vérification</span>
+                            <svg class="absolute bottom-0 inset-x-0 w-full h-3 text-white" viewBox="0 0 240 20" preserveAspectRatio="none">
+                                <path d="M0,20 C60,0 180,0 240,20 L240,20 L0,20 Z" fill="currentColor"/>
+                            </svg>
+                        </div>
+                        <div class="p-4 text-center space-y-2.5">
+                            <p class="text-[10px] text-slate-600 leading-snug">
+                                Badge d'accès élève délivré par <strong>${school}</strong> pour l'année <strong>${year}</strong>.
+                            </p>
+                            <div class="inline-block p-2 bg-slate-50 rounded-xl border border-slate-200">
+                                ${qrSvgMarkup('w-16 h-16')}
+                            </div>
+                            <div class="text-[9px] text-slate-700 space-y-0.5 text-left bg-slate-50 p-2 rounded-lg">
+                                <p><strong>Matricule :</strong> ${student.shortId}</p>
+                                <p><strong>Urgence :</strong> ${student.contact}</p>
+                            </div>
+                            <div class="pt-1">
+                                <p class="font-signature text-base text-slate-800 leading-none">Dir. Académique</p>
+                                <p class="text-[8px] font-bold uppercase text-slate-500">Signature & Cachet</p>
+                            </div>
+                        </div>
+                        <div class="h-4" style="background-color: ${primary};"></div>
+                    </div>
+                `;
+            }
+
+            return `
+                <div class="flex flex-col items-center select-none">
+                    <div class="w-5 h-5 bg-slate-800 rounded-t-sm"></div>
+                    <div class="w-7 h-3 rounded-full border-2 border-slate-400 bg-slate-200 -mt-1 z-10 shadow-xs"></div>
+
+                    <div class="w-[245px] bg-white text-slate-900 rounded-2xl shadow-xl border border-slate-200 overflow-hidden -mt-1.5 relative">
+                        <div class="pt-4 pb-11 px-3 text-center text-white relative" style="background-color: ${primary};">
+                            <div class="w-7 h-1.5 rounded-full bg-white/40 mx-auto mb-2"></div>
+                            <h4 class="font-display font-extrabold text-xs uppercase tracking-wide leading-tight truncate">${school}</h4>
+                            <p class="text-[8px] opacity-90 uppercase tracking-widest mt-0.5">${year}</p>
+                            <svg class="absolute bottom-0 inset-x-0 w-full h-6 text-white" viewBox="0 0 240 30" preserveAspectRatio="none">
+                                <path d="M0,10 Q60,32 120,14 T240,12 L240,30 L0,30 Z" fill="currentColor"/>
+                            </svg>
+                        </div>
+
+                        <div class="relative -mt-11 flex justify-center z-10">
+                            <div class="w-20 h-22 p-1 bg-white shadow-md clip-hex" style="background-color: ${secondary};">
+                                <img src="${student.photo}" alt="${student.fullName}" class="w-full h-full object-cover clip-hex bg-slate-100" onerror="this.src='${fallbackAvatarSvg}'">
+                            </div>
+                        </div>
+
+                        <div class="px-4 pt-2 pb-4 text-center">
+                            <p class="font-display font-extrabold text-xs uppercase text-slate-900 truncate">${student.fullName}</p>
+                            <span class="inline-block text-[10px] font-bold px-2.5 py-0.5 rounded-full mt-1" style="background-color: ${primary}18; color: ${primary};">
+                                Classe : ${student.classe}
+                            </span>
+
+                            <div class="mt-3 text-left text-[10px] space-y-1 text-slate-700 border-t border-slate-100 pt-2.5">
+                                <p class="flex justify-between"><span class="font-bold">Matricule :</span> <span class="font-mono">${student.shortId}</span></p>
+                                <p class="flex justify-between"><span class="font-bold">Né(e) le :</span> <span>${student.dobShort}</span></p>
+                                <p class="flex justify-between"><span class="font-bold">Urgence :</span> <span>${student.contact}</span></p>
+                            </div>
+                        </div>
+
+                        <div class="h-4 relative" style="background-color: ${primary};">
+                            <svg class="absolute -top-2.5 inset-x-0 w-full h-3 text-white" viewBox="0 0 240 20" preserveAspectRatio="none">
+                                <path d="M0,0 L240,0 L240,12 Q180,22 120,10 T0,14 Z" fill="currentColor"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 4. Hero Interactive Table & Card Rendering
+        let activeStudentIndex = 0;
+        let heroTemplateIndex = 0;
+
+        function renderHeroExcelTable() {
+            const tbody = document.getElementById('hero-excel-rows');
+            tbody.innerHTML = sampleStudents.map((st, idx) => {
+                const isSelected = idx === activeStudentIndex;
+                return `
+                    <tr onclick="selectHeroStudent(${idx})" class="cursor-pointer transition-colors ${isSelected ? 'bg-emerald-50/90 font-semibold text-navy-900' : 'hover:bg-slate-50 text-slate-600'}">
+                        <td class="py-2.5 px-3 flex items-center gap-1.5">
+                            <span class="w-2 h-2 rounded-full ${isSelected ? 'bg-emerald-500' : 'bg-slate-300'}"></span>
+                            #${st.row}
+                        </td>
+                        <td class="py-2.5 px-3 font-mono text-[11px]">${st.shortId}</td>
+                        <td class="py-2.5 px-3">${st.fullName}</td>
+                        <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded bg-slate-200/70 text-[11px]">${st.classe}</span></td>
+                        <td class="py-2.5 px-3 hidden sm:table-cell">${st.dobShort}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderHeroCard() {
+            const st = sampleStudents[activeStudentIndex];
+            const container = document.getElementById('hero-card-container');
+            document.getElementById('hero-active-row-num').textContent = st.row;
+
+            document.querySelectorAll('.hero-tpl-pill').forEach((pill, i) => {
+                if (i === heroTemplateIndex) {
+                    pill.className = 'hero-tpl-pill px-2.5 py-1 rounded-lg bg-white text-navy-900 shadow-sm transition-all';
+                } else {
+                    pill.className = 'hero-tpl-pill px-2.5 py-1 rounded-lg text-slate-600 hover:text-navy-900 transition-all';
+                }
+            });
+
+            if (heroTemplateIndex === 0) {
+                container.innerHTML = renderTemplateOfficiel(st);
+            } else if (heroTemplateIndex === 1) {
+                container.innerHTML = renderTemplateNumerique(st);
+            } else if (heroTemplateIndex === 2) {
+                container.innerHTML = renderTemplateModerne(st);
+            } else {
+                container.innerHTML = renderTemplateBadge(st);
+            }
+        }
+
+        function setHeroTemplate(tplIdx) {
+            heroTemplateIndex = tplIdx;
+            clearInterval(heroAutoInterval);
+            renderHeroCard();
+        }
+
+        function selectHeroStudent(index) {
+            activeStudentIndex = index;
+            heroTemplateIndex = sampleStudents[index].templateIndex;
+            renderHeroExcelTable();
+            renderHeroCard();
+        }
+
+        let heroAutoInterval = setInterval(() => {
+            selectHeroStudent((activeStudentIndex + 1) % sampleStudents.length);
+        }, 5000);
+
+        document.getElementById('hero-excel-rows').addEventListener('click', () => {
+            clearInterval(heroAutoInterval);
+        });
+
+        renderHeroExcelTable();
+        renderHeroCard();
+
+        // 5. Interactive Card Studio & 4-Card Gallery
+        let studioState = {
+            template: 'officiel',
+            schoolName: 'CEG STE-RITA COTONOU',
+            year: '2026-2027',
+            primaryColor: '#0D47A1',
+            secondaryColor: '#00ACC1',
+            face: 'recto'
+        };
+
+        document.getElementById('sim-school-input').addEventListener('input', (e) => {
+            studioState.schoolName = e.target.value.trim() || 'Nom de votre Établissement';
+            renderStudioCard();
+        });
+
+        document.getElementById('sim-year-input').addEventListener('input', (e) => {
+            studioState.year = e.target.value.trim() || '2026-2027';
+            renderStudioCard();
+        });
+
+        function setStudioAccent(primary, secondary) {
+            studioState.primaryColor = primary;
+            studioState.secondaryColor = secondary;
+            renderStudioCard();
+        }
+
+        function setStudioFace(face) {
+            studioState.face = face;
+            const btnRecto = document.getElementById('btn-face-recto');
+            const btnVerso = document.getElementById('btn-face-verso');
+            if (face === 'recto') {
+                btnRecto.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 text-navy-950 transition-all';
+                btnVerso.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition-all';
+            } else {
+                btnVerso.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-500 text-navy-950 transition-all';
+                btnRecto.className = 'px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-300 hover:text-white transition-all';
+            }
+            renderStudioCard();
+        }
+
+        function setStudioTemplate(template) {
+            studioState.template = template;
+            document.querySelectorAll('.tpl-btn').forEach(btn => {
+                btn.classList.remove('border-emerald-400', 'bg-emerald-500/15');
+                btn.classList.add('border-white/10', 'bg-white/5');
+            });
+            const activeBtn = document.getElementById(`tpl-btn-${template}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('border-white/10', 'bg-white/5');
+                activeBtn.classList.add('border-emerald-400', 'bg-emerald-500/15');
+            }
+            renderStudioCard();
+        }
+
+        function renderStudioCard() {
+            const stage = document.getElementById('studio-card-stage');
+            if (studioState.template === 'officiel') {
+                stage.innerHTML = renderTemplateOfficiel(sampleStudents[0], studioState);
+            } else if (studioState.template === 'numerique') {
+                stage.innerHTML = renderTemplateNumerique(sampleStudents[1], studioState);
+            } else if (studioState.template === 'moderne') {
+                stage.innerHTML = renderTemplateModerne(sampleStudents[2], studioState);
+            } else {
+                stage.innerHTML = renderTemplateBadge(sampleStudents[3], studioState);
+            }
+        }
+
+        function renderGalleryShowcase() {
+            const grid = document.getElementById('gallery-showcase-grid');
+            const items = [
+                {
+                    title: 'Modèle Officiel Ministériel',
+                    badge: 'Fond Blanc • Format CR80 Horizontal',
+                    html: renderTemplateOfficiel(sampleStudents[0])
+                },
+                {
+                    title: 'Modèle Numérique QR Code',
+                    badge: 'Fond Ivoire • Contrôle d’accès rapide',
+                    html: renderTemplateNumerique(sampleStudents[1])
+                },
+                {
+                    title: 'Modèle Moderne Géométrique',
+                    badge: 'Fond Blanc & Bleu • Signature Direction',
+                    html: renderTemplateModerne(sampleStudents[2], { primaryColor: '#0D47A1', secondaryColor: '#00ACC1' })
+                },
+                {
+                    title: 'Badge Vertical à Lanière',
+                    badge: 'Fond Blanc & Turquoise • Portrait Hexagone',
+                    html: renderTemplateBadge(sampleStudents[3], { primaryColor: '#00897B', secondaryColor: '#0F172A' })
+                }
+            ];
+
+            grid.innerHTML = items.map(item => `
+                <div class="bg-navy-950/70 border border-white/10 rounded-3xl p-6 flex flex-col justify-between">
+                    <div class="flex items-center justify-between gap-2 mb-5">
+                        <h4 class="font-display font-bold text-base text-white">${item.title}</h4>
+                        <span class="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-white/10 text-emerald-300">${item.badge}</span>
+                    </div>
+                    <div class="bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl p-5 flex items-center justify-center min-h-[270px]">
+                        ${item.html}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        renderStudioCard();
+        renderGalleryShowcase();
+
+        // 6. Pricing Billing Toggle
+        function toggleBilling(mode) {
+            const btnAnnual = document.getElementById('btn-billing-annual');
+            const btnMonthly = document.getElementById('btn-billing-monthly');
+            const priceEtab = document.getElementById('price-etablissement');
+            const periodEtab = document.getElementById('period-etablissement');
+            const priceGrp = document.getElementById('price-groupe');
+            const periodGrp = document.getElementById('period-groupe');
+
+            if (mode === 'annual') {
+                btnAnnual.className = 'px-5 py-2 rounded-xl text-sm font-bold bg-navy-900 text-white shadow-sm transition-all';
+                btnMonthly.className = 'px-5 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:text-navy-900 transition-all';
+                priceEtab.textContent = '29 €';
+                periodEtab.textContent = ' / mois (facturé 348 €/an)';
+                priceGrp.textContent = '79 €';
+                periodGrp.textContent = ' / mois (facturé 948 €/an)';
+            } else {
+                btnMonthly.className = 'px-5 py-2 rounded-xl text-sm font-bold bg-navy-900 text-white shadow-sm transition-all';
+                btnAnnual.className = 'px-5 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:text-navy-900 transition-all';
+                priceEtab.textContent = '39 €';
+                periodEtab.textContent = ' / mois sans engagement';
+                priceGrp.textContent = '99 €';
+                periodGrp.textContent = ' / mois sans engagement';
+            }
+        }
+
+        // 7. FAQ Accordion
+        document.querySelectorAll('.faq-trigger').forEach(trigger => {
+            trigger.addEventListener('click', () => {
+                const content = trigger.nextElementSibling;
+                const icon = trigger.querySelector('i');
+                const isOpen = !content.classList.contains('hidden');
+
+                document.querySelectorAll('.faq-content').forEach(c => c.classList.add('hidden'));
+                document.querySelectorAll('.faq-trigger i').forEach(i => i.style.transform = 'rotate(0deg)');
+
+                if (!isOpen) {
+                    content.classList.remove('hidden');
+                    if (icon) icon.style.transform = 'rotate(180deg)';
+                }
+            });
+        });
+
+        // 8. Auth Modal & Toast Notification
+        let currentModalMode = 'signup';
+
+        function openModal(mode) {
+            currentModalMode = mode;
+            updateModalUI();
+            const modal = document.getElementById('auth-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            mobileMenu.classList.add('hidden');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('auth-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex');
+        }
+
+        function switchModalMode() {
+            currentModalMode = currentModalMode === 'signup' ? 'login' : 'signup';
+            updateModalUI();
+        }
+
+        function updateModalUI() {
+            const title = document.getElementById('modal-title');
+            const subtitle = document.getElementById('modal-subtitle');
+            const schoolGroup = document.getElementById('school-field-group');
+            const schoolInput = schoolGroup.querySelector('input');
+            const submitBtn = document.getElementById('modal-submit-btn');
+            const switchText = document.getElementById('modal-switch-text');
+            const switchBtn = document.getElementById('modal-switch-btn');
+
+            if (currentModalMode === 'signup') {
+                title.textContent = 'Inscrire votre établissement';
+                subtitle.textContent = 'Créez votre espace école et générez vos 50 premières cartes gratuitement.';
+                schoolGroup.classList.remove('hidden');
+                schoolInput.required = true;
+                submitBtn.textContent = 'Créer mon espace école';
+                switchText.textContent = 'Déjà inscrit ?';
+                switchBtn.textContent = 'Se connecter';
+            } else {
+                title.textContent = 'Connexion Établissement';
+                subtitle.textContent = 'Accédez à vos classes, vos listes Excel et vos cartes scolaires.';
+                schoolGroup.classList.add('hidden');
+                schoolInput.required = false;
+                submitBtn.textContent = 'Accéder au tableau de bord';
+                switchText.textContent = 'Pas encore de compte école ?';
+                switchBtn.textContent = 'S\'inscrire gratuitement';
+            }
+        }
+
+        function handleAuthSubmit(e) {
+            e.preventDefault();
+            closeModal();
+            const msg = currentModalMode === 'signup'
+                ? 'Bienvenue sur ScolarCard ! Votre espace établissement est prêt.'
+                : 'Connexion réussie ! Redirection vers votre tableau de bord...';
+            showToast(msg);
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-message').textContent = message;
+            toast.classList.remove('hidden');
+            toast.classList.add('flex');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+                toast.classList.remove('flex');
+            }, 4000);
+        }
+
+        // 9. Initialize Lucide Icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>

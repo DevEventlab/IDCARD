@@ -1,0 +1,138 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum BatchStatus {
+  PENDING
+  RUNNING
+  DONE
+  FAILED
+}
+
+enum SchoolVerificationStatus {
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum CardFont {
+  TEMPLATE
+  SANS
+  SERIF
+}
+
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  name            String?
+  password        String
+  schoolId        String?
+  school          School?   @relation(fields: [schoolId], references: [id])
+  isPlatformAdmin Boolean   @default(false)
+  sessions        Session[]
+  createdAt       DateTime  @default(now())
+}
+
+model Session {
+  tokenHash String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model School {
+  id                 String                   @id @default(cuid())
+  name               String
+  slug               String                   @unique
+  authority          String?
+  motto              String?
+  address            String?
+  phone              String?
+  logoUrl            String?
+  cardHeader         String?
+  cardBackText       String?
+  signatoryName      String?
+  signatoryTitle     String?
+  cardFont           CardFont                 @default(TEMPLATE)
+  cardHeaderSize     Int                      @default(16)
+  verificationStatus SchoolVerificationStatus @default(PENDING_REVIEW)
+  verificationNote   String?
+  primaryColor       String                   @default("#1F3A5F")
+  secondaryColor     String                   @default("#C9A24B")
+  defaultTemplate    String                   @default("officiel")
+  schoolYear         String?
+  users              User[]
+  documents          SchoolDocument[]
+  classes            Class[]
+  students           Student[]
+  batches            Batch[]
+  createdAt          DateTime                 @default(now())
+}
+
+model SchoolDocument {
+  id           String   @id @default(cuid())
+  schoolId     String
+  school       School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  originalName String
+  mimeType     String
+  storageKey   String   @unique
+  size         Int
+  createdAt    DateTime @default(now())
+
+  @@index([schoolId, createdAt])
+}
+
+model Class {
+  id       String    @id @default(cuid())
+  schoolId String
+  school   School    @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  name     String
+  students Student[]
+  batches  Batch[]
+
+  @@unique([schoolId, name])
+}
+
+model Student {
+  id              String   @id @default(cuid())
+  schoolId        String
+  school          School   @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  classId         String
+  class           Class    @relation(fields: [classId], references: [id])
+  matricule       String
+  nom             String
+  prenoms         String
+  dateNaissance   DateTime
+  lieuNaissance   String?
+  sexe            String
+  anneeScolaire   String?
+  photoKey        String?
+  telephoneParent String?
+  createdAt       DateTime @default(now())
+
+  @@unique([schoolId, matricule])
+  @@index([schoolId, classId])
+}
+
+model Batch {
+  id         String      @id @default(cuid())
+  schoolId   String
+  school     School      @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  classId    String?
+  class      Class?      @relation(fields: [classId], references: [id])
+  templateId String
+  layout     String      @default("single") // single | a4-sheet
+  status     BatchStatus @default(PENDING)
+  pdfKey     String?
+  total      Int         @default(0)
+  createdAt  DateTime    @default(now())
+}

@@ -1,0 +1,13 @@
+{
+  "routes": [
+    { "path": "/", "title": "Accueil — CarteÉcole" },
+    { "path": "/connexion", "title": "Connexion — CarteÉcole" },
+    { "path": "/inscription", "title": "Inscription — CarteÉcole" },
+    { "path": "/app", "title": "Tableau de bord — CarteÉcole" },
+    { "path": "/app/import", "title": "Importer des élèves — CarteÉcole" },
+    { "path": "/app/eleves", "title": "Répertoire des élèves — CarteÉcole" },
+    { "path": "/app/generer", "title": "Créer les cartes — CarteÉcole" },
+    { "path": "/app/ecole", "title": "Paramètres de l’école — CarteÉcole" },
+    { "path": "/templates", "title": "Modèles de cartes — CarteÉcole" }
+  ]
+}
